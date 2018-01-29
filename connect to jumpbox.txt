@@ -1,6 +1,6 @@
 DML
 data manipulation language
-
+testtesttest
 ----redo log
 begin transaction
 	-insert
