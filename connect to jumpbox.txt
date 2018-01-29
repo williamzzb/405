@@ -1,0 +1,116 @@
+DML
+data manipulation language
+
+----redo log
+begin transaction
+	-insert
+	-update
+	-delete
+commit
+rollback
+
+data coming into a cluster, either stored in all nodes(duplicate), either 
+
+ab6534bf5b13d0808617f6f582
+pwd
+Student2018
+
+ssh root@107.170.204.15
+sudo su - student
+ls -la /datasets/
+
+
+-- Importing the dataset
+drop table if exists  wine_staging_wz ;
+create table wine_staging_wz (
+id varchar(100),
+country varchar(55),
+description text,
+designation varchar(100),
+points varchar(100),
+price varchar(100),
+province varchar(100),
+region1 varchar(100),
+region2 varchar(100),
+taster_name varchar(255),
+taster_twitter_handle varchar(255),
+title varchar(255),
+variety varchar(255),
+winery varchar(255)
+);
+
+-- Load without ignoring first line
+load data infile '/datasets/winemag-data-130k-v2.csv' into table wine_staging_wz FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"' LINES TERMINATED BY '\n' ;
+
+-- Loading the dataset into the table, make sure ignore first line if necessary
+load data infile '/datasets/winemag-data-130k-v2.csv' into table wine_staging_wz FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"' LINES TERMINATED BY '\n' IGNORE 1 LINES ;
+Query OK, 129971 rows affected (3.98 sec)
+
+
+> select country,count(*) from wine_staging;
+
+
+-- Cleaning up The Data
+drop table if exists wine_wz ;
+create table wine_wz (
+id int,
+country varchar(55),
+designation varchar(100),
+points int,
+price decimal (8,2) default 0,
+province varchar(100),
+region1 varchar(100),
+region2 varchar(100),
+taster_name varchar(255),
+taster_twitter_handle varchar(255),
+title varchar(255),
+variety varchar(255),
+winery varchar(255)
+);
+
+insert into wine_wz select id,
+        country,
+        designation,
+        points,
+        price,
+        province,
+        region1,
+        region2,
+        taster_name,
+        taster_twitter_handle,
+        title,
+        variety,
+        winery
+from wine_staging_wz ;
+
+> error ?
+
+-- Fix
+update wine_staging_wz set price ='0' where length(price) < 1 ;
+
+
+
+select id,country,designation,points,price,province,region1,region2,taster_name,taster_twitter_handle,title,variety, winery from wine_wz limit 100;
+select id,country,designation,points,price,province,region1,region2,title,variety, winery from wine_wz limit 100;
+
+
+
+-- Questions
+
+-- What are the top ten province that were tasted the most?
+select province,count(*) as 'total' from wine_wz group by province order by total desc limit 10;
+-- What are the top 20 provinces and varieties that were tasted the most?
+select province,variety,count(*) as 'total' from wine_wz group by province,variety order by total desc limit 20;
+-- What is the Avg Points for Cabernet Sauvignon per Country?
+select country,avg(points) as 'average' from wine_wz where variety='Cabernet Sauvignon' group by country order by average desc;
+-- What is the Avg Points for Cabernet Sauvignon per Country?
+#same as above
+-- What is the top 10 countries  with points > 90
+#average
+select country,count(points) as 'total' from wine_wz where points>90 group by country order by total desc limit 10;
+-- Count Best Rated Wine by Country and province with point > 90
+select country,province,count(*) as 'total' from wine_wz where points>90 group by country,province order by count(*) desc limit 15;
+
+select * from where \G;
+
+truncate wine_staging_wz;
